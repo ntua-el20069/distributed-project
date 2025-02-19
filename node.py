@@ -4,15 +4,15 @@ import json
 from helpers import get_url, get_local_ip
 from flask import request
 
-MAX_NODES = 2**3
+MAX_NODES = 2**7
 
 DEBUG = True
 
 # make a hash function that takes in a string and returns an integer
 def hash_function(s: str) -> int:
-    return int(hashlib.sha256(s.encode()).hexdigest(), 16) % MAX_NODES
+    return int(hashlib.sha1(s.encode()).hexdigest(), 16) % MAX_NODES
 
-known_ip: str = '192.168.1.11'
+known_ip: str = get_local_ip()
 known_port: int = 9001
 
 known_node = {
@@ -47,7 +47,7 @@ class Node:
         self.id : int = hash_function(f"{ip}:{port}")
         self.successor: dict = None
         self.predecessor: dict = None
-        print("Node id:" + str(self.id))
+        print("Node created with id: " + str(self.id))
     
     def join(self, known_node: dict) -> dict:
 
@@ -181,4 +181,7 @@ class Node:
         """Helper to retrieve start parameter from request context"""
         from flask import request  # Import inside method for thread safety
         return int(request.args.get("start", default=self.id, type=int))
+        
+
+
         

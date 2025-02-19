@@ -2,11 +2,11 @@ from flask import Flask, render_template, request
 import socket
 import requests
 import sys
-from node import Node, from_json
+from node import Node, from_json, known_node
 import hashlib
 import json
 import copy
-from helpers import get_local_ip,   get_url
+from helpers import get_local_ip,   get_url, is_port_in_use
 
 app = Flask(__name__)
 node = None
@@ -107,15 +107,47 @@ def query_route():
     
     return json.dumps(result)
 
-
-def main(ip: str, port: int):
-    global net
+@app.route('/depart', methods=['GET'])
+def depart():
     global node
-    node = Node(ip,port)
-    app.run(host = ip, port = int(port), debug = True, use_reloader = False)
+    if node.predecessor and node.successor:
+        requests.post(get_url(node.predecessor['ip'], node.predecessor['port']) + '/set_successor', data = node.successor)
+        requests.post(get_url(node.successor['ip'], node.successor['port']) + '/set_predecessor', data = node.predecessor)
+    # set successor and predecessor of node to None for debugging purposes
+    node.successor = None
+    node.predecessor = None
+    print(f"Node {node.id} has departed")
+    return f"Node {node.id} has departed"
+
+@app.route('/show-network',methods = ['POST'])
+def show_network() -> str:
+    global node
+    
+    result = from_json(request.form.to_dict())
+    known_node = {
+        "ip": result["ip"],
+        "port": result["port"],
+        "id": result["id"]
+    }
+    out = f"{node.id}"
+    if node.successor["ip"] != known_node["ip"] or node.successor["port"] != known_node["port"]:
+        out += f" -> {requests.post(get_url(node.successor['ip'], node.successor['port']) + '/show-network', data = known_node).text}"
+    return out
+
 
 if __name__ == '__main__':
-    local_ip = get_local_ip()  # Automatically get the local IP address
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 5000  # Default port if not provided
-    main(local_ip, port)
+    ip: str = get_local_ip()  # Automatically get the local IP address
+    port: int = int(sys.argv[1]) if len(sys.argv) > 1 else 5000  # Default port if not provided
+    node = Node(ip,port)
 
+    # check that port is not in use
+    if is_port_in_use(ip, port):
+        print(f"Port {port} is already in use. Exiting.")
+        sys.exit(1)
+    
+    # Node joins the P2P network through the known (bootstrap) node
+    join_response = node.join(known_node)
+    print("Join response:", join_response)
+
+    # listen for requests from other nodes
+    app.run(host = ip, port = int(port), debug = True, use_reloader = False)

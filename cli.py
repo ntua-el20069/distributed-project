@@ -1,7 +1,8 @@
 import typer
-import requests
 from typing import List
-from helpers import get_local_ip,   get_url
+import requests
+from node import Node, from_json, known_node
+from helpers import get_local_ip, get_url, is_port_in_use
 
 app = typer.Typer()
 
@@ -33,15 +34,23 @@ def query(key: List[str] = typer.Option(["*"], help = "song title")) -> str:
     print(f"Query key = {key} and return value")
 
 @app.command()
-def depart():
+# this should CHANGE to no parameters when we deploy to multiple nodes
+def depart(port: int = typer.Option(help = "port number")): 
     '''node gracefully departs from system'''
     print("Departure of node")
+    ip = get_local_ip()
+    if ip == known_node["ip"] and port == known_node["port"]:
+        print("Cannot depart from known node")
+        return
+    res = requests.get(get_url(ip, port) + "/depart")
+    print(res.text)
 
 @app.command()
 def overlay():
     '''display the overlay network'''
     print("Overlay network")
-
+    out = requests.post(get_url(known_node["ip"], known_node["port"]) + "/show-network", data = known_node)
+    print(out.text)
 
 if __name__ == "__main__":
     app()

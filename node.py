@@ -10,7 +10,7 @@ DEBUG = True
 
 # make a hash function that takes in a string and returns an integer
 def hash_function(s: str) -> int:
-    return int(hashlib.sha1(s.encode()).hexdigest(), 16) % 10
+    return int(hashlib.sha256(s.encode()).hexdigest(), 16) % MAX_NODES
 
 known_ip: str = '192.168.1.11'
 known_port: int = 9001

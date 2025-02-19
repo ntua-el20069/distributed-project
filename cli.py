@@ -6,7 +6,7 @@ from helpers import get_local_ip, get_url, is_port_in_use
 
 app = typer.Typer()
 
-BASE_URL = "http://192.168.1.10:5000"
+BASE_URL = get_url(known_node["ip"], known_node["port"])
 
 @app.command()
 def insert(key: str = typer.Option(..., help="song title"),

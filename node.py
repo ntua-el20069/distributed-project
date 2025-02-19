@@ -13,7 +13,7 @@ def hash_function(s: str) -> int:
     return int(hashlib.sha1(s.encode()).hexdigest(), 16) % MAX_NODES
 
 known_ip: str = get_local_ip()
-known_port: int = 9001
+known_port: int = 5000
 
 known_node = {
     "ip": known_ip,

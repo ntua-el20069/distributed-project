@@ -8,7 +8,7 @@ if __name__ == "__main__":
     last_time = time.time()
     requests.post(get_url(known_ip, known_port) + "/join", data = known_node)
     ip = get_local_ip()
-    nodes = [ Node(ip, 9000 + i) for i in range(2, 5) ]
+    nodes = [ Node(ip, known_node["port"] + i) for i in range(1, 4) ]
     for node in nodes:
         while time.time() - last_time < 2:
             pass

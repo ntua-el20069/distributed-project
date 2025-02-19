@@ -17,4 +17,16 @@ def get_local_ip() -> str:
 def get_url(ip: str, port: int) -> str:
     return f"http://{ip}:{port}"
 
-
+def is_port_in_use(ip: str, port: int) -> bool:
+    """
+    Check if a port is already in use.
+    :param ip: The IP address to bind to.
+    :param port: The port to check.
+    :return: True if the port is in use, False otherwise.
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind((ip, port))  # Try to bind to the port
+            return False  # Port is available
+        except OSError:
+            return True  # Port is in use

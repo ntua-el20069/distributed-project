@@ -100,12 +100,12 @@ class Node:
         if responsible_node['id'] == self.id:
             # save localy
             self.songs[key] = value
-            print(f"Node {self.id}: Inserted {key} -> {value}")
+            print(f"Node {self.id}: Inserted {key} -> {value}     (key_hash = {key_hash})")
             return {"status": "success", "node": self.id, "action": "insert", "key": key}
         else:
             # forward to the responisible node
             successor = self.successor
-            print(f"Node {self.id}: not responsible for this key, forwarding to successor: node {successor}")
+            print(f"Node {self.id}: not responsible for this key (key_hash = {key_hash}), forwarding to successor: node {successor}")
             return requests.post(get_url(successor['ip'], successor['port']) + "/insert", data = {"key": key, "value": value}).json()
         
     def delete(self, key: str) -> dict:

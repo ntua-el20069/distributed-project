@@ -73,7 +73,8 @@ class Node:
 
         return {"message": "Successfully joined the network"}
     
-
+    def is_responsible_for_key(self, key: int) -> bool:
+        pass
 
     def find_successor(self, key: int) -> dict:
         if self.id == key: # key = node id

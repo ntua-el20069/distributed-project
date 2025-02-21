@@ -98,6 +98,15 @@ class Node:
     def insert(self, key: str, value: str) -> dict:
         key_hash = hash_function(key)
         responsible_node = self.find_successor(key_hash) # find the node responsible for the key
+        if key in self.songs:
+                self.songs[key] += f",{value}"  # Use comma as separator
+                action = "append"
+        else:
+            # save localy
+            self.songs[key] = value
+            action = "insert"
+        print(f"Node {self.id}: {action} {key} -> {self.songs[key]}")
+        return {"status": "success", "node": self.id, "action": action, "current_value": self.songs[key]}
         if responsible_node['id'] == self.id:
             # save localy
             self.songs[key] = value

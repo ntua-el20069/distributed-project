@@ -23,15 +23,28 @@ def insert(key: str = typer.Option(help = "song title"), value: str = typer.Opti
 """
 
 @app.command()
-def delete(key: str = typer.Option(help = "song title")):
+def delete(key: str = typer.Option(help = "Song title to delete.")):
     '''deletes a key-value pair with specified key from the DHT'''
-    print(f"Delete key = {key}")
+    try:
+        response = requests.post(f"{BASE_URL}/delete", data={"key": key})
+        result = response.json()  # Expecting JSON response from backend.
+        typer.echo(f"Delete result:\n{result}")
+    except Exception as e:
+        typer.echo(f"Error during delete of key '{key}': {e}")
+    print(f"Delete key : {key}")
 
 @app.command()
-def query(key: List[str] = typer.Option(["*"], help = "song title")) -> str:
+def query(key: str = typer.Option(["*"], help = "Song title to query. Use '*' to query all songs.")) -> str:
     '''Returns the value that corresponds to the given key.
     Using *, returns all key-value pairs in the DHT grouped by node'''
-    print(f"Query key = {key} and return value")
+    try:
+        # Send a GET request with the key as a query parameter.
+        response = requests.get(f"{BASE_URL}/query", params={"key": key})
+        result = response.json()  # Expecting JSON response from the API.
+        typer.echo(f"Query result:\n{result}")
+    except Exception as e:
+        typer.echo(f"Error querying key '{key}': {e}")
+    print(f"Query key : {key} and return value")
 
 @app.command()
 # this should CHANGE to no parameters when we deploy to multiple nodes

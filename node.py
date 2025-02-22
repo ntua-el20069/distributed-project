@@ -220,9 +220,9 @@ class Node:
         if not self.predecessor:
             return {}
         shared_dict = {}
+        keys_to_delete = []
         for key, value in self.songs.items():
             key_hash = hash_function(key)
-            keys_to_delete = []
             if key_hash <= self.predecessor['id']:
                 # if predecessor is responsible for the key give it
                 shared_dict[key] = value

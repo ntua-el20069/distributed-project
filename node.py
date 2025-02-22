@@ -101,13 +101,21 @@ class Node:
 
     def insert(self, key: str, value: str) -> dict:
         key_hash = hash_function(key)
-        responsible_node = self.find_successor(key_hash) # find the node responsible for the key
-        if responsible_node['id'] != self.id:
-            successor = self.successor
-            print(f"Node {self.id}: not responsible for this key, forwarding to successor: node {successor}")
-            return requests.post(get_url(successor['ip'], successor['port']) + "/insert", data = {"key": key, "value": value}).json()
-        else:   
+        if self.predecessor is None or self.predecessor['id'] == self.id:
+            responsible_node = True
+        else:
+            if self.predecessor['id'] < self.id:
+                responsible_node = (self.predecessor['id'] < key_hash <= self.id)
+            else:
+                responsible_node = (key_hash > self.predecessor['id'] or key_hash <= self.id)
+                
+        if responsible_node: 
             if key in self.songs:
+                current_values = self.songs[key].split(",")
+                # If the new value is already present, do nothing.
+                if value in current_values:
+                    action = "value already exists"
+                else:
                     self.songs[key] += f",{value}"  # Use comma as separator
                     action = "append"
             else:
@@ -116,6 +124,11 @@ class Node:
                 action = "insert"
             print(f"Node {self.id}: {action} {key} -> {self.songs[key]}")
             return {"status": "success", "node": self.id, "action": action, "current_value": self.songs[key]}
+        
+        else:
+            successor = self.successor
+            print(f"Node {self.id}: not responsible for this key, forwarding to successor: node {successor}")
+            return requests.post(get_url(successor['ip'], successor['port']) + "/insert", data = {"key": key, "value": value}).json()
         
     def delete(self, key: str) -> dict:
         key_hash = hash_function(key)

@@ -60,7 +60,14 @@ def join_route() -> str:
         "port": result["port"],
         "id": result["id"]
     }
-    return json.dumps(node.join(known_node))
+    join_response = node.join(known_node)
+    return json.dumps(join_response)
+    
+@app.route('/share_with_predecessor',methods = ['GET'])
+def share_with_predecessor_route() -> str:
+    global node
+    shared_dict = node.share_with_predecessor()
+    return json.dumps(shared_dict)
 
 @app.route('/find_successor',methods = ['POST'])
 def find_successor_route() -> str:
@@ -110,6 +117,12 @@ def query_route():
 @app.route('/depart', methods=['GET'])
 def depart():
     global node
+    if not node.successor or not node.predecessor:
+        return "Node has no successor or predecessor", 400
+    if node.successor:
+        res = requests.post(get_url(node.successor['ip'], node.successor['port']) + '/heritage', data = node.songs)
+        if not res.ok:
+            return "Heritage failed - Node has not departed", 500
     if node.predecessor and node.successor:
         requests.post(get_url(node.predecessor['ip'], node.predecessor['port']) + '/set_successor', data = node.successor)
         requests.post(get_url(node.successor['ip'], node.successor['port']) + '/set_predecessor', data = node.predecessor)
@@ -118,6 +131,13 @@ def depart():
     node.predecessor = None
     print(f"Node {node.id} has departed")
     return f"Node {node.id} has departed"
+
+@app.route('/heritage', methods=['POST'])
+def heritage_route():
+    global node
+    key_values = request.form.to_dict()
+    node.heritage(key_values)
+    return "Heritage successful", 200
 
 @app.route('/show-network',methods = ['POST'])
 def show_network() -> str:

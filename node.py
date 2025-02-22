@@ -71,6 +71,10 @@ class Node:
         
         print(20*"$" + f"  Node {self.id} joined the network  " + 20*"$" + "\n")
 
+        # use a request to the successor to get the songs that should be inherited
+        shared_dict : dict = requests.get(get_url(self.successor['ip'], self.successor['port']) + '/share_with_predecessor').json()
+        self.heritage(shared_dict)
+        
         return {"message": "Successfully joined the network"}
     
     def is_responsible_for_key(self, key: int) -> bool:
@@ -195,7 +199,27 @@ class Node:
                     get_url(successor['ip'], successor['port']) + "/query",
                     params={"key": key}
                 ).json()
-    
+
+    def heritage(self, key_values: dict):
+        self.songs.update(key_values)
+
+    def share_with_predecessor(self) -> dict:
+        if not self.predecessor:
+            return {}
+        shared_dict = {}
+        for key, value in self.songs.items():
+            key_hash = hash_function(key)
+            keys_to_delete = []
+            if key_hash <= self.predecessor['id']:
+                # if predecessor is responsible for the key give it
+                shared_dict[key] = value
+                keys_to_delete.append(key)
+        for dkey in keys_to_delete:
+            del self.songs[dkey]
+        print(f"Node {self.id} shared {shared_dict} with predecessor {self.predecessor['id']} \n and now has {self.songs}")
+
+        return shared_dict
+
     def _get_start_param(self) -> int:
         """Helper to retrieve start parameter from request context"""
         from flask import request  # Import inside method for thread safety

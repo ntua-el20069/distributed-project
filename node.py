@@ -117,10 +117,14 @@ class Node:
         key_hash = hash_function(key)
         responsible_node = self.find_successor(key_hash) # find the node responsible for the key
         if responsible_node['id'] == self.id:
-            # save localy
-            del self.songs[key]
-            print(f"Node {self.id}: Deleted {key}")
-            return {"status": "success", "node": self.id, "action": "delete", "key": key}
+            try:
+                # save localy
+                del self.songs[key]
+                print(f"Node {self.id}: Deleted {key}")
+                return {"status": "success", "node": self.id, "action": "delete", "key": key}
+            except KeyError:
+                print(f"Node {self.id}: Key '{key}' not found for deletion.")
+                return {"status": "fail", "node": self.id, "action": "delete", "key": key, "message": "Key not found"}
         else:
             # forward to the responisible node
             successor = self.successor
@@ -165,14 +169,24 @@ class Node:
             responsible_node = self.find_successor(key_hash)
             if responsible_node['id'] == self.id:
                 value = self.songs.get(key)
-                print(f"Found <key,value>: <{key}, {value}> in node {self.id}")
-                return {
-                    "status": "success",
-                    "node": self.id,
-                    "action": "query",
-                    "key": key,
-                    "value": value
-                }
+                if value is None:
+                    print(f"Node {self.id}: Key '{key}' not found.")
+                    return {
+                        "status": "fail",
+                        "node": self.id,
+                        "action": "query",
+                        "key": key,
+                        "message": "Key not found"
+                    }
+                else:
+                    print(f"Found <key,value>: <{key}, {value}> in node {self.id}")
+                    return {
+                        "status": "success",
+                        "node": self.id,
+                        "action": "query",
+                        "key": key,
+                        "value": value
+                    }
             else:
                 # forward to the responisible node
                 successor = self.successor

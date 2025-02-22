@@ -134,6 +134,10 @@ def show_network() -> str:
         out += f" -> {requests.post(get_url(node.successor['ip'], node.successor['port']) + '/show-network', data = known_node).text}"
     return out
 
+@app.route('/contents', methods=['GET'])
+def contents():
+    global node
+    return json.dumps(node.songs)
 
 if __name__ == '__main__':
     ip: str = get_local_ip()  # Automatically get the local IP address

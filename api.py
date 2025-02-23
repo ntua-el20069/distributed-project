@@ -10,6 +10,8 @@ from helpers import get_local_ip,   get_url, is_port_in_use
 
 app = Flask(__name__)
 node = None
+REPLICA_FACTOR = 1          # Number of replicas for each key
+STRONG_CONSISTENCY = True   # When true linearizability, else eventual consistency
 
 @app.route('/set_predecessor',methods = ['POST'])
 def set_predecessor() -> str:

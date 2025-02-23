@@ -153,7 +153,7 @@ class Node:
 
     def query(self, key: str, start: int = None) -> dict:
         if key == "*":
-            start = self.id if start in None else start
+            start = self.id if start is None else start
             
             # Check if we've completed the full circle
             if self.successor['id'] == start:

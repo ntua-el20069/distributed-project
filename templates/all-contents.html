@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node Contents</title>
+    <style>
+        .content-box {
+            border: 1px solid #000;
+            padding: 10px;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Node Contents</h1>
+    <div id="content-container">
+        <!-- Dynamic content will be inserted here -->
+    </div>
+</body>
+
+<script>
+    function fetchContents() {
+        fetch('/get-contents')
+            .then(res => res.json())
+            .then(data => {
+                let container = document.getElementById('content-container');
+                container.innerHTML = ''; // Clear previous content
+
+                data.forEach(node => {
+                    let box = document.createElement('div');
+                    box.classList.add('content-box');
+
+                    let title = document.createElement('h2');
+                    title.textContent = node.title;
+
+                    let contents = document.createElement('p');
+                    contents.textContent = JSON.stringify(node.contents);
+
+                    box.appendChild(title);
+                    box.appendChild(contents);
+                    container.appendChild(box);
+                });
+            })
+            .catch(err => console.error('Error fetching contents:', err));
+    }
+
+    setInterval(fetchContents, 1000);
+</script>
+</html>

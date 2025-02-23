@@ -1,0 +1,45 @@
+from flask import Flask, render_template, request, jsonify
+import socket
+import requests
+import sys
+from node import Node, from_json, known_node
+
+app = Flask(__name__)
+
+nodes = [
+    {"ip": "192.168.1.11", "port": 5000},
+    {"ip": "192.168.1.11", "port": 5001},
+    {"ip": "192.168.1.11", "port": 5002},
+    {"ip": "192.168.1.11", "port": 5003}
+]
+
+@app.route('/', methods = ['GET'])
+def all_contents():
+    global nodes
+    return render_template("all-contents.html", no_of_nodes = len(nodes))
+
+@app.route('/get-contents', methods=['GET'])
+def get_contents():
+    global nodes
+    all_contents = []
+
+    for node in nodes:
+        url = f"http://{node['ip']}:{node['port']}/contents"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raises an error for bad responses (4xx, 5xx)
+            data = {
+                "title": f"Node {node['ip']}:{node['port']}",
+                "contents": response.json()
+            }
+            all_contents.append(data)
+        except requests.RequestException as e:
+            all_contents.append({
+                "title": f"Node {node['ip']}:{node['port']}",
+                "error": str(e)
+            })
+
+    return jsonify(all_contents)  # Corrected JSON response
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=11000, use_reloader=False)

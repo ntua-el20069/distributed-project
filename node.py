@@ -151,10 +151,9 @@ class Node:
             print(f"Node {self.id}: not responsible for this key, forwarding to successor: node {successor}")
             return requests.post(get_url(successor['ip'], successor['port']) + "/delete", data = {"key": key}).json()
 
-    def query(self, key: str) -> dict:
+    def query(self, key: str, start: int = None) -> dict:
         if key == "*":
-            # Get the start parameter from request arguments (GET params)
-            start = request.args.get("start", default=self.id, type=int)
+            start = start or self.id
             
             # Check if we've completed the full circle
             if self.successor['id'] == start:

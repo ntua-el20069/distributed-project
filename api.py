@@ -107,12 +107,11 @@ def query_route():
 @app.route('/query', methods=['GET'])
 def query_route():
     global node
-    params = request.args.to_dict()
-    key = params.get('key')
     
-    # Manually pass the Flask request context to the Node
-    with app.test_request_context(query_string=request.query_string.decode()):
-        result = node.query(key)
+    key = request.args.get('key')
+    start = request.args.get('start', type=int, default=node.id)
+    
+    result = node.query(key, start)
     
     return json.dumps(result)
 

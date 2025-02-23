@@ -98,8 +98,8 @@ class Node:
                 return self.successor
             else:
                 return from_json(requests.post(get_url(self.successor['ip'], self.successor['port']) + "/find_successor", data = {"key": key}).json())
-
-    def insert(self, key: str, value: str) -> dict:
+            
+    def check_responsible(self, key: str) -> bool:
         key_hash = hash_function(key)
         if self.predecessor is None or self.predecessor['id'] == self.id:
             responsible_node = True
@@ -108,6 +108,10 @@ class Node:
                 responsible_node = (self.predecessor['id'] < key_hash <= self.id)
             else:
                 responsible_node = (key_hash > self.predecessor['id'] or key_hash <= self.id)
+        return responsible_node
+
+    def insert(self, key: str, value: str) -> dict:
+        responsible_node = self.check_responsible(key)
                 
         if responsible_node: 
             if key in self.songs:

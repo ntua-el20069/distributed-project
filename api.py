@@ -2,7 +2,7 @@ from flask import Flask, render_template, request
 import socket
 import requests
 import sys
-from node import Node, from_json, known_node
+from node import Node, from_json, known_node, REPLICA_FACTOR, STRONG_CONSISTENCY
 import hashlib
 import json
 import copy
@@ -10,8 +10,6 @@ from helpers import get_local_ip,   get_url, is_port_in_use
 
 app = Flask(__name__)
 node = None
-REPLICA_FACTOR = 1          # Number of replicas for each key
-STRONG_CONSISTENCY = True   # When true linearizability, else eventual consistency
 
 @app.route('/set_predecessor',methods = ['POST'])
 def set_predecessor() -> str:
@@ -85,7 +83,8 @@ def insert_route():
     data = request.form.to_dict()
     key = data.get('key')
     value = data.get('value')
-    result = node.insert(key, value)
+    remaining_replicas = int(data.get('remaining_replicas', REPLICA_FACTOR))
+    result = node.insert(key, value, remaining_replicas)
     return json.dumps(result)
 
 @app.route('/delete', methods=['POST'])

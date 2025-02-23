@@ -4,6 +4,8 @@ import json
 from helpers import get_url, get_local_ip
 from flask import request
 
+REPLICA_FACTOR = 3          # Number of replicas for each key
+STRONG_CONSISTENCY = True   # When true linearizability, else eventual consistency
 MAX_NODES = 2**7
 
 DEBUG = True
@@ -110,24 +112,37 @@ class Node:
                 responsible_node = (key_hash > self.predecessor['id'] or key_hash <= self.id)
         return responsible_node
 
-    def insert(self, key: str, value: str) -> dict:
-        responsible_node = self.check_responsible(key)
-                
-        if responsible_node: 
-            if key in self.songs:
-                current_values = self.songs[key].split(",")
-                # If the new value is already present, do nothing.
-                if value in current_values:
-                    action = "value already exists"
-                else:
-                    self.songs[key] += f",{value}"  # Use comma as separator
-                    action = "append"
+    def insert_key_value_into_songlist(self, key: str, value: str) -> dict:
+        if key in self.songs:
+            current_values = self.songs[key].split(",")
+            # If the new value is already present, do nothing.
+            if value in current_values:
+                action = "value already exists"
             else:
-                # save localy
-                self.songs[key] = value
-                action = "insert"
-            print(f"Node {self.id}: {action} {key} -> {self.songs[key]}")
-            return {"status": "success", "node": self.id, "action": action, "current_value": self.songs[key]}
+                self.songs[key] += f",{value}"  # Use comma as separator
+                action = "append"
+        else:
+            # save localy
+            self.songs[key] = value
+            action = "insert"
+        print(f"Node {self.id}: {action} {key} -> {self.songs[key]}")
+        return {self.id: {"status": "success", "node": self.id, "action": action, "current_value": self.songs[key] } }
+
+    def insert(self, key: str, value: str, remaining_replicas: int) -> dict:
+        global REPLICA_FACTOR, STRONG_CONSISTENCY
+        responsible_node = self.check_responsible(key)
+        # CAUTION: This is only the strong consistency implementation
+        if responsible_node or remaining_replicas < REPLICA_FACTOR:
+            local_result = self.insert_key_value_into_songlist(key, value)
+            remaining_replicas -= 1
+            if remaining_replicas > 0:
+                # Forward to the successor
+                successor = self.successor
+                print(f"Node {self.id}: Forwarding insert request to successor: node {successor}")
+                succ_res = requests.post(get_url(successor['ip'], successor['port']) + "/insert", data = {"key": key, "value": value, "remaining_replicas": remaining_replicas}).json()
+                return {**local_result, **succ_res}
+            else: # replica write done
+                return local_result
         
         else:
             successor = self.successor

@@ -1,3 +1,6 @@
 .venv/
 *.desktop
 __pycache__/
+insert/
+queries/
+requests/

@@ -109,7 +109,7 @@ def query_route():
     global node
     
     key = request.args.get('key')
-    start = request.args.get('start', type=int, default=node.id)
+    start = request.args.get('start', type=int, default=None)
     
     result = node.query(key, start)
     

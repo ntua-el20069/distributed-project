@@ -135,9 +135,8 @@ class Node:
             return requests.post(get_url(successor['ip'], successor['port']) + "/insert", data = {"key": key, "value": value}).json()
         
     def delete(self, key: str) -> dict:
-        key_hash = hash_function(key)
-        responsible_node = self.find_successor(key_hash) # find the node responsible for the key
-        if responsible_node['id'] == self.id:
+        responsible_node = self.check_responsible(key)
+        if responsible_node:
             try:
                 # save localy
                 del self.songs[key]
@@ -186,9 +185,8 @@ class Node:
                 "result": combined_result
             }
         else:
-            key_hash = hash_function(key)
-            responsible_node = self.find_successor(key_hash)
-            if responsible_node['id'] == self.id:
+            responsible_node = self.check_responsible(key)
+            if responsible_node:
                 value = self.songs.get(key)
                 if value is None:
                     print(f"Node {self.id}: Key '{key}' not found.")

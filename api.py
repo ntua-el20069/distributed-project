@@ -106,12 +106,10 @@ def query_route():
 @app.route('/query', methods=['GET'])
 def query_route():
     global node
-    
-    key = request.args.get('key')
+    key = request.args.get("key")
     start = request.args.get('start', type=int, default=None)
-    
-    result = node.query(key, start)
-    
+    remaining = request.args.get("remaining_replicas", default=REPLICA_FACTOR, type=int)
+    result = node.query(key, start, remaining_replicas=remaining)
     return json.dumps(result)
 
 @app.route('/depart', methods=['GET'])

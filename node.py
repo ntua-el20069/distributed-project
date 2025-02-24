@@ -140,8 +140,6 @@ class Node:
     def insert(self, key: str, value: str, remaining_replicas: int) -> dict:
         global REPLICA_FACTOR, STRONG_CONSISTENCY
         responsible_node = self.check_responsible(key)
-        # CAUTION: This is only the strong consistency implementation
-
         if responsible_node or remaining_replicas < REPLICA_FACTOR:
             local_result = self.insert_key_value_into_songlist(key, value)
             remaining_replicas -= 1
@@ -162,22 +160,35 @@ class Node:
             print(f"Node {self.id}: not responsible for this key, forwarding to successor: node {successor}")
             return requests.post(get_url(successor['ip'], successor['port']) + "/insert", data = {"key": key, "value": value}).json()
         
-    def delete(self, key: str) -> dict:
+    def delete(self, key: str, remaining_replicas: int) -> dict:
+        global REPLICA_FACTOR, STRONG_CONSISTENCY
         responsible_node = self.check_responsible(key)
-        if responsible_node:
+        if responsible_node or remaining_replicas < REPLICA_FACTOR:
+            remaining_replicas -= 1
             try:
-                # save localy
+                # delete locally
                 del self.songs[key]
                 print(f"Node {self.id}: Deleted {key}")
-                return {"status": "success", "node": self.id, "action": "delete", "key": key}
+                local_result = { self.id : {"status": "success", "node": self.id, "action": "delete", "key": key} }
+                if remaining_replicas > 0:
+                    # Forward to the successor
+                    data = {"key": key, "remaining_replicas": remaining_replicas}
+                    if STRONG_CONSISTENCY: # wait for replica write to be done before returning
+                        succ_res = self.forward(data, "/delete")
+                        return {**local_result, **succ_res}
+                    else: # in eventual consistency, return immediately
+                        threading.Thread(target=self.forward, args=(data, "/delete")).start()
+                        return local_result
+                else: # replica deletion done (last node)
+                    return local_result
             except KeyError:
+                # if not found then, all replicas are deleted
                 print(f"Node {self.id}: Key '{key}' not found for deletion.")
-                return {"status": "fail", "node": self.id, "action": "delete", "key": key, "message": "Key not found"}
+                local_result = {"status": "fail", "node": self.id, "action": "delete", "key": key, "message": "Key not found"}
+                return local_result
         else:
-            # forward to the responisible node
-            successor = self.successor
-            print(f"Node {self.id}: not responsible for this key, forwarding to successor: node {successor}")
-            return requests.post(get_url(successor['ip'], successor['port']) + "/delete", data = {"key": key}).json()
+            # forward to the successor until we find the responisible node
+            return self.forward({"key": key}, "/delete")
 
     def query(self, key: str, start: int = None, remaining_replicas: int = None) -> dict:
         global REPLICA_FACTOR, STRONG_CONSISTENCY

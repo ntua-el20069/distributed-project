@@ -79,7 +79,7 @@ def find_successor_route() -> str:
 
 @app.route('/insert', methods=['POST'])
 def insert_route():
-    global node
+    global node, REPLICA_FACTOR
     data = request.form.to_dict()
     key = data.get('key')
     value = data.get('value')
@@ -89,10 +89,11 @@ def insert_route():
 
 @app.route('/delete', methods=['POST'])
 def delete_route():
-    global node
+    global node, REPLICA_FACTOR
     data = request.form.to_dict()
     key = data.get('key')
-    result = node.delete(key)
+    remaining_replicas = int(data.get('remaining_replicas', REPLICA_FACTOR))
+    result = node.delete(key, remaining_replicas)
     return json.dumps(result)
 """
 @app.route('/query', methods=['GET'])

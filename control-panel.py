@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import socket
 import requests
 import sys
-from node import Node, from_json, known_node
+from node import Node, from_json, known_node, hash_function
 from helpers import get_local_ip, get_url, is_port_in_use
 
 app = Flask(__name__)
@@ -28,13 +28,13 @@ def get_contents():
             response = requests.get(url)
             response.raise_for_status()  # Raises an error for bad responses (4xx, 5xx)
             data = {
-                "title": f"Node {node['ip']}:{node['port']}",
+                "title": f'''Node ({hash_function(f'{node["ip"]}:{node["port"]}')}) - {node['ip']}:{node['port']}''',
                 "contents": response.json()
             }
             all_contents.append(data)
         except requests.RequestException as e:
             all_contents.append({
-                "title": f"Node {node['ip']}:{node['port']}",
+                "title": f'''Node ({hash_function(f'{node["ip"]}:{node["port"]}')}) - {node['ip']}:{node['port']}''',
                 "error": str(e)
             })
 

@@ -1,10 +1,22 @@
 import sys
 import requests
 from cli import BASE_URL
+import time
+from node import REPLICA_FACTOR, STRONG_CONSISTENCY
 
 nodes_number = 10
 base_path = ""
 
+# make a decorator measure time
+def measure_time(func):
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        func(*args, **kwargs)
+        end = time.perf_counter()
+        print(f"{func.__name__} took {end-start} seconds")
+    return wrapper
+
+@measure_time
 def insert():
     global nodes_number
     for i in range(nodes_number):
@@ -15,6 +27,7 @@ def insert():
                 song = song.replace('\n', '')
                 requests.post(f"{BASE_URL}/insert", data={"key": song.strip(), "value": i})
 
+@measure_time
 def query():
     global nodes_number
     for i in range(nodes_number):
@@ -25,6 +38,7 @@ def query():
                 response = requests.get(f"{BASE_URL}/query", params={"key": song.strip()})
                 print(response.json())
 
+@measure_time
 def mixed_requests():
     global nodes_number
     for i in range(nodes_number):
@@ -46,6 +60,8 @@ def mixed_requests():
 
 if __name__ == '__main__':
     # check args for possible values: insert, query, requests
+    consistency: str = "linearization" if STRONG_CONSISTENCY else "eventual"
+    print(f"Trying Experiment with replication factor: {REPLICA_FACTOR} and consistency level: {consistency}...")
     args = sys.argv[1:]
     if len(args) == 0:
         print("Please provide an experiment argument (insert, query, requests)")

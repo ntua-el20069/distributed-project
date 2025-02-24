@@ -3,15 +3,14 @@ import socket
 import requests
 import sys
 from node import Node, from_json, known_node
+from helpers import get_local_ip, get_url, is_port_in_use
 
 app = Flask(__name__)
 
-nodes = [
-    {"ip": "192.168.1.11", "port": 5000},
-    {"ip": "192.168.1.11", "port": 5001},
-    {"ip": "192.168.1.11", "port": 5002},
-    {"ip": "192.168.1.11", "port": 5003}
-]
+my_ip = get_local_ip()
+
+nodes = [ {"ip": my_ip, "port": 5000 + i} for i in range(4) ]
+
 
 @app.route('/', methods = ['GET'])
 def all_contents():

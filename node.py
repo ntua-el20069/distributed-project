@@ -3,6 +3,7 @@ import requests
 import json
 from helpers import get_url, get_local_ip
 from flask import request
+import threading
 
 REPLICA_FACTOR = 3          # Number of replicas for each key
 STRONG_CONSISTENCY = True   # When true linearizability, else eventual consistency
@@ -128,19 +129,31 @@ class Node:
         print(f"Node {self.id}: {action} {key} -> {self.songs[key]}")
         return {self.id: {"status": "success", "node": self.id, "action": action, "current_value": self.songs[key] } }
 
+    def forward(self, data: dict, endpoint: str) -> dict:
+        if self.successor:
+            print(f"Node {self.id}: Forwarding {endpoint} to successor: node {self.successor}")
+            return requests.post(get_url(self.successor['ip'], self.successor['port']) + endpoint, data = data).json()
+        else:
+            print(f"Node {self.id}: No successor to forward to")
+            return {"message": "No successor"}
+
     def insert(self, key: str, value: str, remaining_replicas: int) -> dict:
         global REPLICA_FACTOR, STRONG_CONSISTENCY
         responsible_node = self.check_responsible(key)
         # CAUTION: This is only the strong consistency implementation
+
         if responsible_node or remaining_replicas < REPLICA_FACTOR:
             local_result = self.insert_key_value_into_songlist(key, value)
             remaining_replicas -= 1
             if remaining_replicas > 0:
                 # Forward to the successor
-                successor = self.successor
-                print(f"Node {self.id}: Forwarding insert request to successor: node {successor}")
-                succ_res = requests.post(get_url(successor['ip'], successor['port']) + "/insert", data = {"key": key, "value": value, "remaining_replicas": remaining_replicas}).json()
-                return {**local_result, **succ_res}
+                data = {"key": key, "value": value, "remaining_replicas": remaining_replicas}
+                if STRONG_CONSISTENCY: # wait for replica write to be done before returning
+                    succ_res = self.forward(data, "/insert")
+                    return {**local_result, **succ_res}
+                else: # in eventual consistency, return immediately
+                    threading.Thread(target=self.forward, args=(data, "/insert")).start()
+                    return local_result
             else: # replica write done
                 return local_result
         

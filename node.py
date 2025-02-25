@@ -227,61 +227,83 @@ class Node:
                 "result": combined_result
             }
         else:
-            # For a specific key, first check if this node is responsible (primary).
-            if self.check_responsible(key) or (remaining_replicas < REPLICA_FACTOR):
-                # We are the primary for this key; now start the chain read.
-                # Here, we decrement remaining_replicas for each replica in the chain.
-                if remaining_replicas > 1:
-                    successor = self.successor
-                    print(f"Node {self.id} (primary): forwarding chain read for key '{key}' to successor {successor} with remaining_replicas={remaining_replicas-1}")
-                    try:
-                        response = requests.get(
-                            get_url(successor['ip'], successor['port']) + "/query",
-                            params={
+            if STRONG_CONSISTENCY:
+                # For a specific key, first check if this node is responsible (primary).
+                if self.check_responsible(key) or (remaining_replicas < REPLICA_FACTOR):
+                    # We are the primary for this key; now start the chain read.
+                    # Here, we decrement remaining_replicas for each replica in the chain.
+                    if remaining_replicas > 1:
+                        successor = self.successor
+                        print(f"Node {self.id} (primary): forwarding chain read for key '{key}' to successor {successor} with remaining_replicas={remaining_replicas-1}")
+                        try:
+                            response = requests.get(
+                                get_url(successor['ip'], successor['port']) + "/query",
+                                params={
+                                    "key": key,
+                                    "remaining_replicas": remaining_replicas - 1
+                                }
+                            )
+                            return response.json()
+                        except requests.exceptions.RequestException as e:
+                            print(f"Error forwarding query from node {self.id}: {e}")
+                            return {
+                                "status": "fail",
+                                "node": self.id,
+                                "action": "query",
                                 "key": key,
-                                "remaining_replicas": remaining_replicas - 1
+                                "message": "Error forwarding query"
                             }
-                        )
-                        return response.json()
-                    except requests.exceptions.RequestException as e:
-                        print(f"Error forwarding query from node {self.id}: {e}")
-                        return {
-                            "status": "fail",
-                            "node": self.id,
-                            "action": "query",
-                            "key": key,
-                            "message": "Error forwarding query"
-                        }
-                else:
-                    # remaining_replicas == 1, this node is the tail.
-                    value = self.songs.get(key)
-                    if value is None:
-                        print(f"Node {self.id} (tail): Key '{key}' not found.")
-                        return {
-                            "status": "fail",
-                            "node": self.id,
-                            "action": "query",
-                            "key": key,
-                            "message": "Key not found"
-                        }
                     else:
-                        print(f"Node {self.id} (tail): Found <{key}, {value}>")
-                        return {
-                            "status": "success",
-                            "node": self.id,
-                            "action": "query",
-                            "key": key,
-                            "value": value,
-                            "hash_key": hash_function(key)
-                        }
+                        # remaining_replicas == 1, this node is the tail.
+                        value = self.songs.get(key)
+                        if value is None:
+                            print(f"Node {self.id} (tail): Key '{key}' not found.")
+                            return {
+                                "status": "fail",
+                                "node": self.id,
+                                "action": "query",
+                                "key": key,
+                                "message": "Key not found"
+                            }
+                        else:
+                            print(f"Node {self.id} (tail): Found <{key}, {value}>")
+                            return {
+                                "status": "success",
+                                "node": self.id,
+                                "action": "query",
+                                "key": key,
+                                "value": value,
+                                "hash_key": hash_function(key)
+                            }
+                else:
+                    # If the node is not responsible for the key, simply forward without decrementing remaining_replicas.
+                    successor = self.successor
+                    print(f"Node {self.id}: not primary for key '{key}', forwarding to successor {successor} without altering replica count.")
+                    return requests.get(
+                        get_url(successor['ip'], successor['port']) + "/query",
+                        params={"key": key, "remaining_replicas": remaining_replicas}
+                    ).json()   
             else:
-                # If the node is not responsible for the key, simply forward without decrementing remaining_replicas.
-                successor = self.successor
-                print(f"Node {self.id}: not primary for key '{key}', forwarding to successor {successor} without altering replica count.")
-                return requests.get(
-                    get_url(successor['ip'], successor['port']) + "/query",
-                    params={"key": key, "remaining_replicas": remaining_replicas}
-                ).json()    
+                # Eventual consistency
+                value = self.songs.get(key)
+                if value is None:
+                    print(f"Node {self.id}: Key '{key}' not found.")
+                    successor = self.successor
+                    print(f"Node {self.id}: Key '{key}' not found, forwarding to successor {successor}.")
+                    return requests.get(
+                        get_url(successor['ip'], successor['port']) + "/query",
+                        params={"key": key, "remaining_replicas": remaining_replicas}
+                    ).json() 
+                else:
+                    print(f"Node {self.id}: Found <{key}, {value}>")
+                    return {
+                        "status": "success",
+                        "node": self.id,
+                        "action": "query",
+                        "key": key,
+                        "value": value,
+                        "hash_key": hash_function(key)
+                    }
 
     def heritage(self, key_values: dict):
         self.songs.update(key_values)

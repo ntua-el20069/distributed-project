@@ -192,6 +192,7 @@ class Node:
 
     def query(self, key: str, start: int = None, remaining_replicas: int = None) -> dict:
         global REPLICA_FACTOR, STRONG_CONSISTENCY
+        #STRONG_CONSISTENCY = False
         if remaining_replicas is None:
             remaining_replicas = REPLICA_FACTOR
         
@@ -285,6 +286,16 @@ class Node:
                     ).json()   
             else:
                 # Eventual consistency
+                # Check if we've completed the full circle
+                if start is not None and self.id == start:
+                    print(f"Node {self.id}: Key '{key}' not found.")
+                    return {
+                        "status": "fail",
+                        "node": self.id,
+                        "action": "query",
+                        "key": key,
+                        "message": "Key not found"
+                    }
                 value = self.songs.get(key)
                 if value is None:
                     print(f"Node {self.id}: Key '{key}' not found.")
@@ -292,7 +303,7 @@ class Node:
                     print(f"Node {self.id}: Key '{key}' not found, forwarding to successor {successor}.")
                     return requests.get(
                         get_url(successor['ip'], successor['port']) + "/query",
-                        params={"key": key, "remaining_replicas": remaining_replicas}
+                        params={"key": key, "remaining_replicas": remaining_replicas, "start": start if start is not None else self.id}
                     ).json() 
                 else:
                     print(f"Node {self.id}: Found <{key}, {value}>")

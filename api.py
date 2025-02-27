@@ -87,6 +87,16 @@ def insert_route():
     result = node.insert(key, value, remaining_replicas)
     return json.dumps(result)
 
+@app.route('/replicate', methods=['POST'])
+def replicate_route():
+    key = request.form.get("key")
+    value = request.form.get("value")
+    # Here, you may store the replica in a separate structure or merge with self.songs,
+    # depending on your design.
+    node.songs[key] = value  # For simplicity, we update the same store.
+    return json.dumps({"status": "success", "node": node.id, "action": "replicate", "key": key})
+
+
 @app.route('/delete', methods=['POST'])
 def delete_route():
     global node, REPLICA_FACTOR
@@ -95,15 +105,7 @@ def delete_route():
     remaining_replicas = int(data.get('remaining_replicas', REPLICA_FACTOR))
     result = node.delete(key, remaining_replicas)
     return json.dumps(result)
-"""
-@app.route('/query', methods=['GET'])
-def query_route():
-    global node
-    params = request.args.to_dict()
-    key = params.get('key')
-    result = node.query(key)
-    return json.dumps(result)
-"""
+
 @app.route('/query', methods=['GET'])
 def query_route():
     global node

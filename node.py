@@ -78,7 +78,33 @@ class Node:
         shared_dict : dict = requests.get(get_url(self.successor['ip'], self.successor['port']) + '/share_with_predecessor').json()
         self.heritage(shared_dict)
         
-        return {"message": "Successfully joined the network"}
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                self.update_replication()
+                break
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    print(f"Failed after {max_retries} attempts")
+        
+        
+        return {"message": "Successfully joined the network with replication updated"}
+    
+    def update_replication(self):
+        global REPLICA_FACTOR
+        current_node = self.successor
+        replications_done = 0
+        
+        while replications_done < REPLICA_FACTOR:
+            try:
+                requests.post(
+                    get_url(current['ip'], current['port']) + "/replicate"
+                )
+                replications_done += 1
+                current = self.get_successor(current)
+            except:
+                break
+
     
     def is_responsible_for_key(self, key: int) -> bool:
         pass

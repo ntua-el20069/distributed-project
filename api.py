@@ -163,6 +163,22 @@ def show_network() -> str:
         out += f" -> {requests.post(get_url(node.successor['ip'], node.successor['port']) + '/show-network', data = known_node).text}"
     return out
 
+@app.route('/total-nodes',methods = ['POST'])
+def total_nodes_route() -> str:
+    global node
+    result = from_json(request.form.to_dict())
+    known_node = {
+        "ip": result["ip"],
+        "port": result["port"],
+        "id": result["id"]
+    }
+    total_nodes = 1
+    if node.successor["ip"] != known_node["ip"] or node.successor["port"] != known_node["port"]:
+        total_nodes += int(requests.post(get_url(node.successor['ip'], node.successor['port']) + '/total-nodes', data = known_node).text)
+    return str(total_nodes)
+    
+
+
 @app.route('/contents', methods=['GET'])
 def contents():
     global node

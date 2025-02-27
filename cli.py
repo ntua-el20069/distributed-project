@@ -65,5 +65,12 @@ def overlay():
     out = requests.post(get_url(known_node["ip"], known_node["port"]) + "/show-network", data = known_node)
     print(out.text)
 
+@app.command()
+def total_nodes():
+    '''display the total number of nodes in the system'''
+    print("Total number of nodes")
+    out = requests.post(get_url(known_node["ip"], known_node["port"]) + "/total-nodes", data = known_node)
+    print(out.text)
+
 if __name__ == "__main__":
     app()

@@ -53,7 +53,7 @@ class Node:
         print("Node created with id: " + str(self.id))
     
     def join(self, known_node: dict) -> dict:
-
+        global REPLICA_FACTOR
         if self.ip == known_node["ip"] and self.port == known_node["port"]: # if the node is the first node in the network
             self.successor = identification(self)
             self.predecessor = identification(self)
@@ -68,42 +68,47 @@ class Node:
         self.predecessor = from_json(requests.get(get_url(self.successor["ip"], self.successor["port"]) + "/get_predecessor").json())
         print(f"Node {self.id} set predecessor to {self.predecessor['id']}")
 
-        requests.post(get_url(self.successor["ip"], self.successor["port"]) + "/set_predecessor", data = identification(self))
 
+        if REPLICA_FACTOR > 1:
+            # before joining the network decide which songs to inherit and make sure the replication is updated
+            # ensure that the successor has the correct predecessor (the new one that joins)
+            # this does not insert the node in the network yet as we use 
+            # the successor to traverse the DHT
+            
+            # temporarily insert and remove the node from the DHT to get the songs that should be inherited
+            requests.post(get_url(self.successor["ip"], self.successor["port"]) + "/set_predecessor", data = identification(self))          # temp koin the DHT
+            shared_dict : dict = requests.get(get_url(self.successor['ip'], self.successor['port']) + '/share_with_predecessor_without_deleting').json()     # get the songs that should be inherited
+            requests.post(get_url(self.successor["ip"], self.successor["port"]) + "/set_predecessor", data = self.predecessor)              # leave the DHT by updating the successor's predecessor
+            
+            whole_succesor_songs: dict = requests.get(get_url(self.successor['ip'], self.successor['port']) + '/contents').json()
+            number_of_nodes = int(requests.post(get_url(known_node['ip'], known_node['port']) + '/total-nodes', data = known_node).text)
+            if number_of_nodes < REPLICA_FACTOR:
+                self.songs = whole_succesor_songs # inherit all songs (because there are not enough nodes in the network)
+            else:
+                self.songs = shared_dict # inherit only the songs that should inherit as a predecessor 
+            print(f"Node {self.id} inherited {self.songs} from {self.successor['id']}")
+            # now delete the inherited songs from the DHT
+            for key in self.songs.keys():
+                requests.post(get_url(self.successor['ip'], self.successor['port']) + '/delete', data = {"key": key})
+            # re-insert the inherited songs with the new replication
+            # use a marked_node id to replicate to REPLICA_FACTOR - 1 nodes 
+            # the extra node is the one that joins
+            for key, value in self.songs.items():
+                requests.post(get_url(self.successor['ip'], self.successor['port']) + '/insert', data = {"key": key, "value": value, "marked_node_id": self.successor["id"]})
+
+
+        # Nodes joins the network via updating the his predecessor's and successor's pointers to him
+        requests.post(get_url(self.successor["ip"], self.successor["port"]) + "/set_predecessor", data = identification(self))
         requests.post(get_url(self.predecessor["ip"], self.predecessor["port"]) + "/set_successor", data = identification(self))
         
-        print(20*"$" + f"  Node {self.id} joined the network  " + 20*"$" + "\n")
 
-        # use a request to the successor to get the songs that should be inherited
-        shared_dict : dict = requests.get(get_url(self.successor['ip'], self.successor['port']) + '/share_with_predecessor').json()
-        self.heritage(shared_dict)
+        if REPLICA_FACTOR == 1:
+            # use a request to the successor to get the songs that should be inherited
+            shared_dict : dict = requests.get(get_url(self.successor['ip'], self.successor['port']) + '/share_with_predecessor').json()
+            self.heritage(shared_dict)
         
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                self.update_replication()
-                break
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    print(f"Failed after {max_retries} attempts")
-        
-        
+        print(20*"$" + f"  Node {self.id} joined the network  " + 20*"$" + "\n")
         return {"message": "Successfully joined the network with replication updated"}
-    
-    def update_replication(self):
-        global REPLICA_FACTOR
-        current_node = self.successor
-        replications_done = 0
-        
-        while replications_done < REPLICA_FACTOR:
-            try:
-                requests.post(
-                    get_url(current['ip'], current['port']) + "/replicate"
-                )
-                replications_done += 1
-                current = self.get_successor(current)
-            except:
-                break
 
     
     def is_responsible_for_key(self, key: int) -> bool:
@@ -163,15 +168,18 @@ class Node:
             print(f"Node {self.id}: No successor to forward to")
             return {"message": "No successor"}
 
-    def insert(self, key: str, value: str, remaining_replicas: int) -> dict:
+    def insert(self, key: str, value: str, remaining_replicas: int, marked_node_id) -> dict:
         global REPLICA_FACTOR, STRONG_CONSISTENCY
         responsible_node = self.check_responsible(key)
         if responsible_node or remaining_replicas < REPLICA_FACTOR:
-            local_result = self.insert_key_value_into_songlist(key, value)
+            if marked_node_id is not None:  # if the node is marked to insert k-1 replicas
+                if int(marked_node_id) == self.id: remaining_replicas -= 1     # this is used in the join function (to avoid the extra node to insert k replicas)
+            local_result = self.insert_key_value_into_songlist(key, value) if remaining_replicas > 0 else {}
             remaining_replicas -= 1
             if remaining_replicas > 0:
                 # Forward to the successor
                 data = {"key": key, "value": value, "remaining_replicas": remaining_replicas}
+                if marked_node_id is not None: data["marked_node_id"] = str(marked_node_id)
                 if STRONG_CONSISTENCY: # wait for replica write to be done before returning
                     succ_res = self.forward(data, "/insert")
                     return {**local_result, **succ_res}
@@ -184,7 +192,9 @@ class Node:
         else:
             successor = self.successor
             print(f"Node {self.id}: not responsible for this key, forwarding to successor: node {successor}")
-            return requests.post(get_url(successor['ip'], successor['port']) + "/insert", data = {"key": key, "value": value}).json()
+            data = {"key": key, "value": value}
+            if marked_node_id is not None: data["marked_node_id"] = str(marked_node_id)
+            return requests.post(get_url(successor['ip'], successor['port']) + "/insert", data = data).json()
         
     def delete(self, key: str, remaining_replicas: int) -> dict:
         global REPLICA_FACTOR, STRONG_CONSISTENCY
@@ -345,19 +355,20 @@ class Node:
     def heritage(self, key_values: dict):
         self.songs.update(key_values)
 
-    def share_with_predecessor(self) -> dict:
+    def share_with_predecessor(self, dont_delete = False) -> dict:
         if not self.predecessor:
             return {}
         shared_dict = {}
         keys_to_delete = []
         for key, value in self.songs.items():
             key_hash = hash_function(key)
-            if key_hash <= self.predecessor['id']:
-                # if predecessor is responsible for the key give it
+            if not self.check_responsible(key):
+                # if predecessor is responsible for the key or he should inherit a replica give it
                 shared_dict[key] = value
                 keys_to_delete.append(key)
-        for dkey in keys_to_delete:
-            del self.songs[dkey]
+        if not dont_delete:
+            for dkey in keys_to_delete:
+                del self.songs[dkey]
         print(f"Node {self.id} shared {shared_dict} with predecessor {self.predecessor['id']} \n and now has {self.songs}")
 
         return shared_dict

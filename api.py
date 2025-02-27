@@ -69,6 +69,12 @@ def share_with_predecessor_route() -> str:
     shared_dict = node.share_with_predecessor()
     return json.dumps(shared_dict)
 
+@app.route('/share_with_predecessor_without_deleting', methods=['GET'])
+def share_with_predecessor_without_deleting():
+    global node
+    shared_dict = node.share_with_predecessor(dont_delete=True)
+    return json.dumps(shared_dict)
+
 @app.route('/find_successor',methods = ['POST'])
 def find_successor_route() -> str:
     global node
@@ -84,7 +90,9 @@ def insert_route():
     key = data.get('key')
     value = data.get('value')
     remaining_replicas = int(data.get('remaining_replicas', REPLICA_FACTOR))
-    result = node.insert(key, value, remaining_replicas)
+    marked_node_id = data.get('marked_node_id', None) # used to insert k-1 replicas in join function
+    marked_node_id = int(marked_node_id) if marked_node_id is not None else None
+    result = node.insert(key, value, remaining_replicas, marked_node_id)
     return json.dumps(result)
 
 @app.route('/replicate', methods=['POST'])

@@ -57,6 +57,17 @@ def mixed_requests():
                     response = requests.get(f"{BASE_URL}/query", params={"key": song.strip()})
                     print(response.json())
 
+@measure_time
+def test():
+    global nodes_number
+    print(f"Inserting key-value pair into DHT (test...)")
+    with open(base_path + f"tests/test_insert.txt", "r") as f:
+        for song in f.readlines():
+            i = len(song) % nodes_number
+            if not song: continue
+            song = song.replace('\n', '')
+            requests.post(f"{BASE_URL}/insert", data={"key": song.strip(), "value": i})    
+
 
 if __name__ == '__main__':
     # check args for possible values: insert, query, requests
@@ -75,6 +86,9 @@ if __name__ == '__main__':
     elif args[0] == "requests":
         print("Experiment: Sending requests to DHT")
         mixed_requests()
+    elif args[0] == "test":
+        print("Experiment: Testing DHT")
+        test()
     else:
         print("Invalid experiment argument. Please provide insert, query, or requests")
         sys.exit(1)

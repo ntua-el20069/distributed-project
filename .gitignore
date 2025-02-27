@@ -4,3 +4,4 @@ __pycache__/
 insert/
 queries/
 requests/
+tests/test_insert.txt

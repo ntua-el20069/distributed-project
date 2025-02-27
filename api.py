@@ -118,16 +118,24 @@ def depart():
     global node
     if not node.successor or not node.predecessor:
         return "Node has no successor or predecessor", 400
-    if node.successor:
+    # here we remove the node from the network by updating successor's and predessor's pointers
+    requests.post(get_url(node.predecessor['ip'], node.predecessor['port']) + '/set_successor', data = node.successor)
+    requests.post(get_url(node.successor['ip'], node.successor['port']) + '/set_predecessor', data = node.predecessor)
+    if REPLICA_FACTOR == 1:
         res = requests.post(get_url(node.successor['ip'], node.successor['port']) + '/heritage', data = node.songs)
         if not res.ok:
-            return "Heritage failed - Node has not departed", 500
-    if node.predecessor and node.successor:
-        requests.post(get_url(node.predecessor['ip'], node.predecessor['port']) + '/set_successor', data = node.successor)
-        requests.post(get_url(node.successor['ip'], node.successor['port']) + '/set_predecessor', data = node.predecessor)
+            return "Heritage failed - but Node has departed", 500
+    # after removing node from the network, insert all its songs to the network beggining from its successor
+    if REPLICA_FACTOR > 1:
+        # a not optimal way to re-distribute (insert replicas) - beginning from the REPLICA_FACTOR-th predecessor would be faster
+        for key in node.songs:
+            res = requests.post(get_url(node.successor['ip'], node.successor['port']) + '/insert', data = {"key": key, "value": node.songs[key]})
+            print(f"\nfor key: {key}")
+            print(res.json())
     # set successor and predecessor of node to None for debugging purposes
     node.successor = None
     node.predecessor = None
+    node.songs = {}
     print(f"Node {node.id} has departed")
     return f"Node {node.id} has departed"
 

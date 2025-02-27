@@ -160,7 +160,7 @@ def contents():
 
 if __name__ == '__main__':
     ip: str = get_local_ip()  # Automatically get the local IP address
-    port: int = int(sys.argv[1]) if len(sys.argv) > 1 else 5000  # Default port if not provided
+    port: int = int(sys.argv[1]) if len(sys.argv) > 1 else known_node["port"]  # Default port if not provided
     node = Node(ip,port)
 
     # check that port is not in use

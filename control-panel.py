@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 my_ip = get_local_ip()
 
-nodes = [ {"ip": my_ip, "port": 5000 + i} for i in range(4) ]
+nodes = [ {"ip": my_ip, "port": known_node["port"] + i} for i in range(4) ]
 
 
 @app.route('/', methods = ['GET'])

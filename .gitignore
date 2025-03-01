@@ -1,8 +1,5 @@
 .venv/
 *.desktop
 __pycache__/
-insert/
-queries/
-requests/
 tests/test_insert.txt
 team_12_ips.csv

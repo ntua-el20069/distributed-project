@@ -1,6 +1,14 @@
 import socket
 import hashlib
 
+REPLICA_FACTOR = 3          # Number of replicas for each key
+STRONG_CONSISTENCY = True   # When true linearizability, else eventual consistency
+MAX_NODES = 2**7
+
+DEBUG = True
+AWS = True
+
+
 def get_vms_ips() -> list:
     with open("team_12_ips.csv", 'r') as  f:
         ips = f.readlines()[1].split(',')[2:]
@@ -21,6 +29,32 @@ def get_local_ip() -> str:
 
 def get_url(ip: str, port: int) -> str:
     return f"http://{ip}:{port}"
+
+
+# make a hash function that takes in a string and returns an integer
+def hash_function(s: str) -> int:
+    return int(hashlib.sha1(s.encode()).hexdigest(), 16) % MAX_NODES
+
+known_ip: str = get_vms_ips()[0] if AWS else get_local_ip()
+known_port: int = 5000
+
+known_node = {
+    "ip": known_ip,
+    "port": known_port,
+    "id": hash_function(f"{known_ip}:{known_port}")
+}
+
+BASE_URL = get_url(known_node["ip"], known_node["port"])
+
+def from_json(res: dict) -> dict:
+    if "message" in res.keys():
+        return res
+    return {
+        "id": int(res["id"]),
+        "ip": res["ip"],
+        "port": int(res["port"])
+    } 
+
 
 def is_port_in_use(ip: str, port: int) -> bool:
     """

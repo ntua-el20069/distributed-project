@@ -1,12 +1,10 @@
 import typer
 from typing import List
 import requests
-from node import Node, from_json, known_node
-from helpers import get_local_ip, get_url, is_port_in_use
+from helpers import *
 
 app = typer.Typer()
 
-BASE_URL = get_url(known_node["ip"], known_node["port"])
 
 @app.command()
 def insert(key: str = typer.Option(..., help="song title"),

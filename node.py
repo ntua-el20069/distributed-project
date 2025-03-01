@@ -1,46 +1,9 @@
 import hashlib
 import requests
 import json
-from helpers import get_url, get_local_ip
+from helpers import *
 from flask import request
 import threading
-
-REPLICA_FACTOR = 3          # Number of replicas for each key
-STRONG_CONSISTENCY = True   # When true linearizability, else eventual consistency
-MAX_NODES = 2**7
-
-DEBUG = True
-
-# make a hash function that takes in a string and returns an integer
-def hash_function(s: str) -> int:
-    return int(hashlib.sha1(s.encode()).hexdigest(), 16) % MAX_NODES
-
-known_ip: str = get_local_ip()
-known_port: int = 5000
-
-known_node = {
-    "ip": known_ip,
-    "port": known_port,
-    "id": hash_function(f"{known_ip}:{known_port}")
-}
-
-def identification(node : 'Node') -> dict:
-    return {
-        "id": node.id,
-        "ip": node.ip,
-        "port": node.port
-    }
-
-def from_json(res: dict) -> dict:
-    if "message" in res.keys():
-        return res
-    return {
-        "id": int(res["id"]),
-        "ip": res["ip"],
-        "port": int(res["port"])
-    } 
-
-
 
 class Node:
     def __init__(self, ip: str, port: int):
@@ -52,11 +15,18 @@ class Node:
         self.predecessor: dict = None
         print("Node created with id: " + str(self.id))
     
+    def identification(self) -> dict:
+        return {
+        "id": self.id,
+        "ip": self.ip,
+        "port": self.port
+        }
+    
     def join(self, known_node: dict) -> dict:
         global REPLICA_FACTOR
         if self.ip == known_node["ip"] and self.port == known_node["port"]: # if the node is the first node in the network
-            self.successor = identification(self)
-            self.predecessor = identification(self)
+            self.successor = self.identification()
+            self.predecessor = self.identification()
             print("\n" + 20*"$" + f"  The first Node {self.id} joined the network  " + 20*"$" + "\n")
             return {"message": "1st node successfully joined the network"}
         
@@ -76,7 +46,7 @@ class Node:
             # the successor to traverse the DHT
             
             # temporarily insert and remove the node from the DHT to get the songs that should be inherited
-            requests.post(get_url(self.successor["ip"], self.successor["port"]) + "/set_predecessor", data = identification(self))          # temp koin the DHT
+            requests.post(get_url(self.successor["ip"], self.successor["port"]) + "/set_predecessor", data = self.identification())          # temp join the DHT
             shared_dict : dict = requests.get(get_url(self.successor['ip'], self.successor['port']) + '/share_with_predecessor_without_deleting').json()     # get the songs that should be inherited
             requests.post(get_url(self.successor["ip"], self.successor["port"]) + "/set_predecessor", data = self.predecessor)              # leave the DHT by updating the successor's predecessor
             
@@ -98,8 +68,8 @@ class Node:
 
 
         # Nodes joins the network via updating the his predecessor's and successor's pointers to him
-        requests.post(get_url(self.successor["ip"], self.successor["port"]) + "/set_predecessor", data = identification(self))
-        requests.post(get_url(self.predecessor["ip"], self.predecessor["port"]) + "/set_successor", data = identification(self))
+        requests.post(get_url(self.successor["ip"], self.successor["port"]) + "/set_predecessor", data = self.identification())
+        requests.post(get_url(self.predecessor["ip"], self.predecessor["port"]) + "/set_successor", data = self.identification())
         
 
         if REPLICA_FACTOR == 1:
@@ -116,10 +86,10 @@ class Node:
 
     def find_successor(self, key: int) -> dict:
         if self.id == key: # key = node id
-            return identification(self)
+            return self.identification()
         
         if self.id == self.successor['id']: # if there is only one node in the network
-            return identification(self)
+            return self.identification()
         
         if self.id < self.successor['id']:
             if self.id < key <= self.successor['id']:

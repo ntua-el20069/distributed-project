@@ -1,9 +1,7 @@
 import sys
 import requests
-from cli import BASE_URL
 import time
-from node import REPLICA_FACTOR, STRONG_CONSISTENCY
-from helpers import get_local_ip, get_vms_ips
+from helpers import *
 
 nodes_number = 10
 base_path = ""

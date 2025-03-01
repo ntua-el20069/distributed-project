@@ -2,11 +2,11 @@ from flask import Flask, render_template, request
 import socket
 import requests
 import sys
-from node import Node, from_json, known_node, REPLICA_FACTOR, STRONG_CONSISTENCY
 import hashlib
 import json
 import copy
-from helpers import get_local_ip,   get_url, is_port_in_use
+from node import Node
+from helpers import *
 
 app = Flask(__name__)
 node = None

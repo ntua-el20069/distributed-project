@@ -1,3 +1,7 @@
+### OUTDATED ###
+# This file was used in the past to join nodes, 
+# does not work anymore due to files changes
+
 import requests
 import time
 from node import Node, known_ip, known_port, known_node

@@ -1,6 +1,11 @@
 import socket
 import hashlib
 
+def get_vms_ips() -> list:
+    with open("team_12_ips.csv", 'r') as  f:
+        ips = f.readlines()[1].split(',')[2:]
+    return ips
+
 def get_local_ip() -> str:
     """Get the local IP address of the system."""
     try:

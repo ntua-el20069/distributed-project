@@ -3,13 +3,13 @@ import socket
 import requests
 import sys
 from node import Node, from_json, known_node, hash_function
-from helpers import get_local_ip, get_url, is_port_in_use
+from helpers import get_local_ip, get_url, is_port_in_use, get_vms_ips
 
 app = Flask(__name__)
 
 my_ip = get_local_ip()
 
-nodes = [ {"ip": my_ip, "port": known_node["port"] + i} for i in range(4) ]
+nodes = []
 
 
 @app.route('/', methods = ['GET'])
@@ -41,4 +41,10 @@ def get_contents():
     return jsonify(all_contents)  # Corrected JSON response
 
 if __name__ == '__main__':
+    # make it get one argument (local/aws) default aws
+    if len(sys.argv) > 1 and sys.argv[1] == "local":
+        nodes = [ {"ip": my_ip, "port": known_node["port"] + i} for i in range(5) ]
+    else:
+        nodes = [ {"ip": ip, "port": known_node["port"]} for ip in get_vms_ips() ]
+    print(f"Nodes: {nodes}")
     app.run(debug=True, host='0.0.0.0', port=11000, use_reloader=False)

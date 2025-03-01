@@ -3,9 +3,11 @@ import requests
 from cli import BASE_URL
 import time
 from node import REPLICA_FACTOR, STRONG_CONSISTENCY
+from helpers import get_local_ip, get_vms_ips
 
 nodes_number = 10
 base_path = ""
+ips = [] # list of ips (5 vm's)
 
 # make a decorator measure time
 def measure_time(func):
@@ -18,7 +20,7 @@ def measure_time(func):
 
 @measure_time
 def insert():
-    global nodes_number
+    global nodes_number, ips
     for i in range(nodes_number):
         print(f"Inserting key-value pair into DHT: node {i}")
         with open(base_path + f"insert/insert_0{i}_part.txt", "r") as f:
@@ -29,7 +31,7 @@ def insert():
 
 @measure_time
 def query():
-    global nodes_number
+    global nodes_number, ips
     for i in range(nodes_number):
         print(f"Querying key-value pair from DHT: node {i}")
         with open(base_path + f"queries/query_0{i}.txt", "r") as f:
@@ -40,7 +42,7 @@ def query():
 
 @measure_time
 def mixed_requests():
-    global nodes_number
+    global nodes_number, ips
     for i in range(nodes_number):
         print(f"Sending requests to DHT: node {i}")
         with open(base_path + f"requests/requests_0{i}.txt", "r") as f:
@@ -59,7 +61,7 @@ def mixed_requests():
 
 @measure_time
 def test():
-    global nodes_number
+    global nodes_number, ips
     print(f"Inserting key-value pair into DHT (test...)")
     with open(base_path + f"tests/test_insert.txt", "r") as f:
         for song in f.readlines():
@@ -70,6 +72,11 @@ def test():
 
 
 if __name__ == '__main__':
+
+    ips = get_vms_ips()
+    print("IP addreddes of the VM's are: ", end="")
+    print(ips)
+
     # check args for possible values: insert, query, requests
     consistency: str = "linearization" if STRONG_CONSISTENCY else "eventual"
     print(f"Trying Experiment with replication factor: {REPLICA_FACTOR} and consistency level: {consistency}...")

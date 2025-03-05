@@ -41,9 +41,11 @@ def get_contents():
 
 if __name__ == '__main__':
     # make it get one argument (local/aws) default aws
-    if len(sys.argv) > 1 and sys.argv[1] == "local":
-        nodes = [ {"ip": my_ip, "port": known_node["port"] + i} for i in range(5) ]
+    if not AWS:
+        nodes = [ {"ip": my_ip, "port": known_node["port"] + i} for i in range(5) ] # would change to 10 but we do not test locally with 10 terminals
     else:
         nodes = [ {"ip": ip, "port": known_node["port"]} for ip in get_vms_ips() ]
+        nodes_2 = [ {"ip": ip, "port": known_node["port"] + 1} for ip in get_vms_ips() ]
+        nodes.extend(nodes_2)
     print(f"Nodes: {nodes}")
     app.run(debug=True, host='0.0.0.0', port=11000, use_reloader=False)

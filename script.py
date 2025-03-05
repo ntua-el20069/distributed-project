@@ -25,7 +25,7 @@ def insert():
             for song in f.readlines():
                 if not song: continue
                 song = song.replace('\n', '')
-                requests.post(f"{BASE_URL}/insert", data={"key": song.strip(), "value": i})
+                requests.post(f"{BASE_URL}/insert", data={"key": song.strip(), "value": str(i)})
 
 @measure_time
 def query():
@@ -50,7 +50,7 @@ def mixed_requests():
                 cmd = parts[0].replace('\n', '')
                 song = parts[1].replace('\n', '')
                 if cmd == "insert":
-                    node_that_stores_song = int(parts[2])
+                    node_that_stores_song = parts[2].replace('\n', '')
                     res = requests.post(f"{BASE_URL}/insert", data={"key": song.strip(), "value": node_that_stores_song})
                     print(res.json())
                 elif cmd == "query":

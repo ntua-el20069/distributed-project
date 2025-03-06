@@ -1,6 +1,7 @@
 import sys
 import requests
 import time
+import threading
 from helpers import *
 
 nodes_number = 10
@@ -13,19 +14,24 @@ def measure_time(func):
         start = time.perf_counter()
         func(*args, **kwargs)
         end = time.perf_counter()
-        print(f"{func.__name__} took {end-start} seconds")
+        print(f"{func.__name__} {args} took {end-start} seconds")
     return wrapper
+
+@measure_time
+def insert_in_node(i: int):
+    global nodes_number, ips, nodes
+    print(f"Inserting key-value pair into DHT: node {i}")
+    with open(base_path + f"insert/insert_0{i}_part.txt", "r") as f:
+        for song in f.readlines():
+            if not song: continue
+            song = song.replace('\n', '')
+            requests.post(f"{get_url(nodes[i]['ip'], nodes[i]['port'])}/insert", data={"key": song.strip(), "value": str(i)})
 
 @measure_time
 def insert():
     global nodes_number, ips
     for i in range(nodes_number):
-        print(f"Inserting key-value pair into DHT: node {i}")
-        with open(base_path + f"insert/insert_0{i}_part.txt", "r") as f:
-            for song in f.readlines():
-                if not song: continue
-                song = song.replace('\n', '')
-                requests.post(f"{BASE_URL}/insert", data={"key": song.strip(), "value": str(i)})
+        threading.Thread(target=insert_in_node, args=(i,)).start()
 
 @measure_time
 def query():

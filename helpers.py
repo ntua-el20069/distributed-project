@@ -46,6 +46,14 @@ known_node = {
 
 BASE_URL = get_url(known_node["ip"], known_node["port"])
 
+nodes = []
+if not AWS:
+    nodes = [ {"ip": get_local_ip(), "port": known_node["port"] + i} for i in range(5) ] # would change to 10 but we do not test locally with 10 terminals
+else:
+    nodes = [ {"ip": ip, "port": known_node["port"]} for ip in get_vms_ips() ]
+    nodes_2 = [ {"ip": ip, "port": known_node["port"] + 1} for ip in get_vms_ips() ]
+    nodes.extend(nodes_2)
+
 def from_json(res: dict) -> dict:
     if "message" in res.keys():
         return res

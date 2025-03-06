@@ -6,11 +6,6 @@ from helpers import *
 
 app = Flask(__name__)
 
-my_ip = get_local_ip()
-
-nodes = []
-
-
 @app.route('/', methods = ['GET'])
 def all_contents():
     global nodes
@@ -41,11 +36,6 @@ def get_contents():
 
 if __name__ == '__main__':
     # make it get one argument (local/aws) default aws
-    if not AWS:
-        nodes = [ {"ip": my_ip, "port": known_node["port"] + i} for i in range(5) ] # would change to 10 but we do not test locally with 10 terminals
-    else:
-        nodes = [ {"ip": ip, "port": known_node["port"]} for ip in get_vms_ips() ]
-        nodes_2 = [ {"ip": ip, "port": known_node["port"] + 1} for ip in get_vms_ips() ]
-        nodes.extend(nodes_2)
+    # nodes defined in helpers.py
     print(f"Nodes: {nodes}")
     app.run(debug=True, host='0.0.0.0', port=11000, use_reloader=False)

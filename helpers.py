@@ -7,7 +7,7 @@ MAX_NODES = 2**7
 
 DEBUG = True
 AWS = True
-json_file = "contents.json"
+contents_path = "contents.json"
 
 def get_vms_ips() -> list:
     with open("team_12_ips.csv", 'r') as  f:

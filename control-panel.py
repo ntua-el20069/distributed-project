@@ -21,7 +21,7 @@ def remote_contents():
 @app.route('/get-contents', methods=['GET'])
 def get_contents():
     '''runs in the VMs to get the contents from all the VMs and save a json file'''
-    global nodes, json_file
+    global nodes, contents_path
     all_contents = []
 
     for node in nodes:
@@ -41,25 +41,25 @@ def get_contents():
             })
         
     # Save the retrieved contents to a JSON file
-    with open(json_file, "w", encoding="utf-8") as json_file:
-        json.dump(all_contents, json_file, indent=4)
+    with open(contents_path, "w", encoding="utf-8") as f:
+        json.dump(all_contents, f, indent=4)
 
     return jsonify(all_contents)  # Corrected JSON response
 
 @app.route('/get-remote-contents', methods=['GET'])
 def get_remote_contents():
     '''runs in our local PC to get the contents from the remote VM that runs the control panel (using SCP)'''
-    global control_panel_node, json_file
-    remote_path = f"team_12-vm{control_panel_node}:~/distributed-project/templates/{json_file}"
-    local_path = json_file
+    global control_panel_node, contents_path
+    remote_path = f"team_12-vm{control_panel_node}:~/distributed-project/{contents_path}"
+    local_path = contents_path
     
     try:
         # Execute SCP command to copy the file from the remote machine
         subprocess.run(["scp", remote_path, local_path  ], check=True)
         
         # Read the downloaded JSON file
-        with open(local_path, "r", encoding="utf-8") as json_file:
-            data = json.load(json_file)
+        with open(local_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
         return jsonify(data)
     except subprocess.CalledProcessError as e:
         return jsonify({"error": f"SCP failed: {str(e)}"})

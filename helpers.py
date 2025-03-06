@@ -7,7 +7,7 @@ MAX_NODES = 2**7
 
 DEBUG = True
 AWS = True
-
+json_file = "contents.json"
 
 def get_vms_ips() -> list:
     with open("team_12_ips.csv", 'r') as  f:
@@ -45,6 +45,7 @@ known_node = {
 }
 
 BASE_URL = get_url(known_node["ip"], known_node["port"])
+control_panel_node = 1 # specify 1-5 for the appropriate vm
 
 nodes = []
 if not AWS:

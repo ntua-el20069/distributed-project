@@ -47,7 +47,7 @@ def query_in_node(i: int):
             # Send query request to this node.
             response = requests.get(node_url + "/query", params={"key": song})
             result = response.json()
-            print(f"Node {nodes['id']} query for key '{song}' returned: {result}")
+            print(f"Node {nodes[i]['id']} query for key '{song}' returned: {result}")
 
 @measure_time
 def query():

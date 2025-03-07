@@ -34,6 +34,33 @@ def insert():
         threading.Thread(target=insert_in_node, args=(i,)).start()
 
 @measure_time
+def query_in_node(i: int):
+    global nodes_number, ips, nodes
+    node_info = nodes[i]
+    node_url = get_url(node_info['ip'], node_info['port'])
+    print(f"Querying from node {node_info['id']} at {node_info['ip']}:{node_info['port']}")
+    
+    with open(base_path + f"queries/query_0{i}.txt", "r") as f:
+        for song in f.readlines():
+            song = song.strip()
+            if not song:
+                continue
+            # Send query request to this node.
+            response = requests.get(node_url + "/query", params={"key": song})
+            result = response.json()
+            print(f"Node {node_info['id']} query for key '{song}' returned: {result}")
+
+@measure_time
+def query():
+    threads = []
+    for i in range(nodes_number):
+        t = threading.Thread(target=query_in_node, args=(i,))
+        t.start()
+        threads.append(t)
+    for t in threads:
+        t.join()
+
+"""@measure_time
 def query():
     global nodes_number, ips
     for i in range(nodes_number):
@@ -42,8 +69,8 @@ def query():
             for song in f.readlines():
                 if not song: continue
                 response = requests.get(f"{BASE_URL}/query", params={"key": song.strip()})
-                print(response.json())
-
+                print(response.json())"""
+   
 @measure_time
 def mixed_requests():
     global nodes_number, ips

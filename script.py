@@ -35,20 +35,19 @@ def insert():
 
 @measure_time
 def query_in_node(i: int):
-    global nodes_number, ips, nodes
-    node_info = nodes[i]
-    node_url = get_url(node_info['ip'], node_info['port'])
-    print(f"Querying from node {node_info['id']} at {node_info['ip']}:{node_info['port']}")
-    
+    global nodes_number, nodes
+    #node_info = nodes[i]
+    node_url = get_url(nodes[i]['ip'], nodes[i]['port'])
+    print(f"Querying key from node node {i}")
     with open(base_path + f"queries/query_0{i}.txt", "r") as f:
         for song in f.readlines():
-            song = song.strip()
             if not song:
                 continue
+            song = song.strip()
             # Send query request to this node.
             response = requests.get(node_url + "/query", params={"key": song})
             result = response.json()
-            print(f"Node {node_info['id']} query for key '{song}' returned: {result}")
+            print(f"Node {nodes['id']} query for key '{song}' returned: {result}")
 
 @measure_time
 def query():

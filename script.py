@@ -65,7 +65,7 @@ def query():
         t.join()
                 
 @measure_time
-def mixed_requests_in_node(i: int, request: str):
+def mixed_requests_in_node(i: int):
     global nodes_number, nodes
     node_url = get_url(nodes[i]['ip'], nodes[i]['port'])
     for i in range(nodes_number):

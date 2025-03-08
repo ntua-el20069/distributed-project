@@ -69,7 +69,7 @@ def mixed_requests_in_node(i: int):
     global nodes_number, nodes
     node_url = get_url(nodes[i]['ip'], nodes[i]['port'])
     for i in range(nodes_number):
-            print(f"Sending requests to DHT: node {i}")
+            #print(f"Sending requests to DHT: node {i}")
             with open(base_path + f"requests/requests_0{i}.txt", "r") as f:
                 for line in f.readlines():
                     if not line: continue
@@ -79,10 +79,10 @@ def mixed_requests_in_node(i: int):
                     if cmd == "insert":
                         node_that_stores_song = parts[2].replace('\n', '')
                         res = requests.post(f"{node_url}/insert", data={"key": song.strip(), "value": node_that_stores_song})
-                        print(res.json())
+                        #print(res.json())
                     elif cmd == "query":
                         response = requests.get(f"{node_url}/query", params={"key": song.strip()})
-                        print(response.json())
+                        #print(response.json())
    
 @measure_time
 def mixed_requests():

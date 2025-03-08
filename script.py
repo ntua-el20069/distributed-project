@@ -30,8 +30,13 @@ def insert_in_node(i: int):
 @measure_time
 def insert():
     global nodes_number, ips
+    threads = []
     for i in range(nodes_number):
-        threading.Thread(target=insert_in_node, args=(i,)).start()
+        t = threading.Thread(target=insert_in_node, args=(i,))
+        t.start()
+        threads.append(t)
+    for t in threads:
+        t.join()
 
 @measure_time
 def query_in_node(i: int):

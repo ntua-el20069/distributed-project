@@ -6,7 +6,7 @@ STRONG_CONSISTENCY = True   # When true linearizability, else eventual consisten
 MAX_NODES = 2**16
 
 DEBUG = True
-AWS = False
+AWS = True
 contents_path = "contents.json"
 
 def get_vms_ips() -> list:

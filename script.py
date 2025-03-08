@@ -41,7 +41,6 @@ def insert():
 @measure_time
 def query_in_node(i: int):
     global nodes_number, nodes
-    #node_info = nodes[i]
     node_url = get_url(nodes[i]['ip'], nodes[i]['port'])
     print(f"Querying key from node {i}")
     with open(base_path + f"queries/query_0{i}.txt", "r") as f:
@@ -68,21 +67,20 @@ def query():
 def mixed_requests_in_node(i: int):
     global nodes_number, nodes
     node_url = get_url(nodes[i]['ip'], nodes[i]['port'])
-    for i in range(nodes_number):
-            #print(f"Sending requests to DHT: node {i}")
-            with open(base_path + f"requests/requests_0{i}.txt", "r") as f:
-                for line in f.readlines():
-                    if not line: continue
-                    parts = line.split(', ')
-                    cmd = parts[0].replace('\n', '')
-                    song = parts[1].replace('\n', '')
-                    if cmd == "insert":
-                        node_that_stores_song = parts[2].replace('\n', '')
-                        res = requests.post(f"{node_url}/insert", data={"key": song.strip(), "value": node_that_stores_song})
-                        #print(res.json())
-                    elif cmd == "query":
-                        response = requests.get(f"{node_url}/query", params={"key": song.strip()})
-                        #print(response.json())
+    print(f"Sending insert-query requests to node {i}")
+    with open(base_path + f"requests/requests_0{i}.txt", "r") as f:
+        for line in f.readlines():
+            if not line: continue
+            parts = line.split(', ')
+            cmd = parts[0].replace('\n', '')
+            song = parts[1].replace('\n', '')
+            if cmd == "insert":
+                node_that_stores_song = parts[2].replace('\n', '')
+                res = requests.post(f"{node_url}/insert", data={"key": song.strip(), "value": node_that_stores_song})
+                #print(res.json())
+            elif cmd == "query":
+                response = requests.get(f"{node_url}/query", params={"key": song.strip()})
+                #print(response.json())
    
 @measure_time
 def mixed_requests():

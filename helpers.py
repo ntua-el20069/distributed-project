@@ -3,10 +3,10 @@ import hashlib
 
 REPLICA_FACTOR = 3          # Number of replicas for each key
 STRONG_CONSISTENCY = True   # When true linearizability, else eventual consistency
-MAX_NODES = 2**7
+MAX_NODES = 2**16
 
 DEBUG = True
-AWS = True
+AWS = False
 contents_path = "contents.json"
 
 def get_vms_ips() -> list:

@@ -76,11 +76,14 @@ def mixed_requests_in_node(i: int):
             song = parts[1].replace('\n', '')
             if cmd == "insert":
                 node_that_stores_song = parts[2].replace('\n', '')
+                # in prints there may be line interleaving problem (due to threading)
+                # we may use a lock to avoid this
+                print(f"Inserting {song.strip()}: {node_that_stores_song} \t pair into DHT: node {i}")
                 res = requests.post(f"{node_url}/insert", data={"key": song.strip(), "value": node_that_stores_song})
                 #print(res.json())
             elif cmd == "query":
                 response = requests.get(f"{node_url}/query", params={"key": song.strip()})
-                #print(response.json())
+                print(response.json())
    
 @measure_time
 def mixed_requests():

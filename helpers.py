@@ -9,6 +9,11 @@ DEBUG = True
 AWS = True
 contents_path = "contents.json"
 
+def set_config(replica_factor, strong_consistency):
+    global REPLICA_FACTOR, STRONG_CONSISTENCY
+    REPLICA_FACTOR = replica_factor
+    STRONG_CONSISTENCY = strong_consistency
+
 def get_vms_ips() -> list:
     with open("team_12_ips.csv", 'r') as  f:
         ips = f.readlines()[1].split(',')[2:]

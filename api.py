@@ -185,7 +185,11 @@ def total_nodes_route() -> str:
         total_nodes += int(requests.post(get_url(node.successor['ip'], node.successor['port']) + '/total-nodes', data = known_node).text)
     return str(total_nodes)
     
-
+@app.route('/reset', methods=['POST'])
+def reset_route():
+    global node
+    node.reset()
+    return json.dumps({"status": "success"})
 
 @app.route('/contents', methods=['GET'])
 def contents():

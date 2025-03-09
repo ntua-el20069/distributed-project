@@ -348,6 +348,7 @@ class Node:
         from flask import request  # Import inside method for thread safety
         return int(request.args.get("start", default=self.id, type=int))
         
-
+    def reset(self):
+            self.songs.clear()
 
         

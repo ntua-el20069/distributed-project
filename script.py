@@ -14,7 +14,9 @@ def measure_time(func):
         start = time.perf_counter()
         func(*args, **kwargs)
         end = time.perf_counter()
-        print(f"{func.__name__} {args} took {end-start} seconds")
+        duration = end - start
+        print(f"{func.__name__} {args} took {duration} seconds")
+        return duration
     return wrapper
 
 @measure_time

@@ -1,5 +1,7 @@
 import socket
 import hashlib
+import os
+import csv
 
 REPLICA_FACTOR = 5          # Number of replicas for each key
 STRONG_CONSISTENCY = False   # When true linearizability, else eventual consistency
@@ -78,3 +80,14 @@ def is_port_in_use(ip: str, port: int) -> bool:
             return False  # Port is available
         except OSError:
             return True  # Port is in use
+
+def save_throughput(operation, config, throughput):
+    """Save throughput results to a CSV file"""
+    filename = "experiments/throughput_results.csv"
+    file_exists = os.path.isfile(filename)
+    mode = 'w' if not file_exists else 'a'
+    with open(filename, mode) as f:
+        writer = csv.writer(f)
+        if mode == 'w':
+            writer.writerow(['operation', 'k', 'consistency', 'throughput'])
+        writer.writerow([operation, config['k'], config['consistency'], throughput])

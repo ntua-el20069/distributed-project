@@ -4,6 +4,7 @@ import time
 import threading
 from helpers import *
 
+TOTAL_REQUESTS = 500
 nodes_number = 10
 base_path = ""
 ips = [] # list of ips (5 vm's)
@@ -15,6 +16,16 @@ def measure_time(func):
         func(*args, **kwargs)
         end = time.perf_counter()
         print(f"{func.__name__} {args} took {end-start} seconds")
+        if func.__name__ in ["insert", "query", "mixed_requests"]:
+            throughput = TOTAL_REQUESTS / (end-start)
+            action = "write" if func.__name__ == "insert" else "read" if func.__name__ == "query" else "mixed"
+            config = {
+                "k": REPLICA_FACTOR,
+                "consistency": "strong" if STRONG_CONSISTENCY else "eventual"
+            }
+            save_throughput(action, config, throughput)
+            print(f"Throughtput: {throughput} requests/second")
+            return throughput
     return wrapper
 
 @measure_time

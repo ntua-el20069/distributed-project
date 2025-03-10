@@ -80,35 +80,38 @@ def mixed_requests_in_node(i: int):
     node_url = get_url(nodes[i]['ip'], nodes[i]['port'])
     print(f"Sending insert-query requests to node {i}")
     with open(base_path + f"requests/requests_0{i}.txt", "r") as f:
-        for line in f.readlines():
+        for no_line, line in enumerate(f.readlines()):
             if not line: continue
             parts = line.split(', ')
             cmd = parts[0].replace('\n', '')
             song = parts[1].replace('\n', '')
+            request_id = f"(node_{i}, {no_line})"
             if cmd == "insert":
                 node_that_stores_song = parts[2].replace('\n', '')
                 # in prints there may be line interleaving problem (due to threading)
                 # we may use a lock to avoid this
                 res = requests.post(f"{node_url}/insert", data={"key": song.strip(), "value": node_that_stores_song})
-                print(f"node_{i}:\t Inserted {song.strip()}: {node_that_stores_song}")
+                print(f"{request_id}:\t Inserted {song.strip()}: {node_that_stores_song}")
                 #print(res.json())
             elif cmd == "query":
                 response = requests.get(f"{node_url}/query", params={"key": song.strip()})
                 data = response.json()
                 try:
-                    print(f"node_{i}: Queried {song.strip()} -> {data['status']}: {data['value']}")
+                    print(f"{request_id}: Queried {song.strip()} -> {data['status']}: {data['value']}")
                 except Exception as e:
-                    print(f"node_{i}: Queried {song.strip()} -> Faulty Response: {e}")
+                    print(f"{request_id}: Queried {song.strip()} -> Faulty Response: {e}")
    
 @measure_time
 def mixed_requests():
-    threads = []
+    for i in range(nodes_number):
+        mixed_requests_in_node(i)
+    '''threads = []
     for i in range(nodes_number):
         t = threading.Thread(target=mixed_requests_in_node, args=(i,))
         t.start()
         threads.append(t)
     for t in threads:
-        t.join()
+        t.join()'''
 
 @measure_time
 def test():

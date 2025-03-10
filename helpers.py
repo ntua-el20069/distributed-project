@@ -1,8 +1,8 @@
 import socket
 import hashlib
 
-REPLICA_FACTOR = 1          # Number of replicas for each key
-STRONG_CONSISTENCY = True   # When true linearizability, else eventual consistency
+REPLICA_FACTOR = 5          # Number of replicas for each key
+STRONG_CONSISTENCY = False   # When true linearizability, else eventual consistency
 MAX_NODES = 2**16
 
 DEBUG = True

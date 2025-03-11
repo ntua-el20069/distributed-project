@@ -4,12 +4,24 @@ import requests
 import sys
 import hashlib
 import json
+from functools import wraps
 import copy
+import time
 from node import Node
 from helpers import *
 
 app = Flask(__name__)
 node = None
+
+def delay(seconds):
+    """Decorator to delay execution of a Flask endpoint."""
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            time.sleep(seconds)  # Introduce delay
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
 
 @app.route('/set_predecessor',methods = ['POST'])
 def set_predecessor() -> str:
@@ -84,6 +96,7 @@ def find_successor_route() -> str:
     return json.dumps(successor)
 
 @app.route('/insert', methods=['POST'])
+@delay(0.010)
 def insert_route():
     global node, REPLICA_FACTOR
     data = request.form.to_dict()

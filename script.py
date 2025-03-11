@@ -2,6 +2,11 @@ import sys
 import requests
 import time
 import threading
+import asyncio
+import aiohttp
+import aiofiles
+import os
+import json
 from helpers import *
 
 TOTAL_REQUESTS = 500
@@ -100,7 +105,7 @@ def mixed_requests_in_node(i: int):
                     print(f"{request_id}: Queried {song.strip()} -> {data['status']}: {data['value']}")
                 except Exception as e:
                     print(f"{request_id}: Queried {song.strip()} -> Faulty Response: {e}")
-   
+
 @measure_time
 def mixed_requests():
     for i in range(nodes_number):
@@ -112,6 +117,75 @@ def mixed_requests():
         threads.append(t)
     for t in threads:
         t.join()'''
+
+
+async def insert_song(session, node_url, song, node_that_stores_song, request_id):
+    """Asynchronous insert request"""
+    # check if execution.log exists
+    mode = 'w' if not os.path.exists("execution.log") else 'a'
+    with open("execution.log", mode) as f:
+        f.write(f"{request_id}:\t Inserting {song}: {node_that_stores_song}\n")
+    async with session.post(f"{node_url}/insert", data={"key": song, "value": node_that_stores_song}) as res:
+        print(f"{request_id}:\t Inserted {song}: {node_that_stores_song}")
+
+async def query_song(session, node_url, song, request_id):
+    """Asynchronous query request"""
+    mode = 'w' if not os.path.exists("execution.log") else 'a'
+    with open("execution.log", mode) as f:
+        f.write(f"{request_id}:\t Querying {song}\n")
+    async with session.get(f"{node_url}/query", params={"key": song}) as res:
+        try:
+            text = await res.text()
+            data = json.loads(text)
+            print(f"{request_id}: Queried {song} -> {data['status']}: {data['value']}")
+        except Exception as e:
+            print(f"{request_id}: Queried {song} -> Faulty Response: {e}")
+
+async def async_mixed_requests_in_node(i: int):
+    global nodes_number, nodes
+    node_url = get_url(nodes[i]['ip'], nodes[i]['port'])
+    print(f"Sending insert-query requests to node {i}")
+
+    tasks = []  # List to hold async tasks
+
+    base_path = ""  # Define your base path for requests
+    file_path = os.path.join(base_path, f"requests/requests_0{i}.txt")
+
+    async with aiohttp.ClientSession() as session:
+        async with aiofiles.open(file_path, "r") as f:
+            lines = await f.readlines()
+            for no_line, line in enumerate(lines):
+                if not line.strip():
+                    continue
+                
+                parts = line.split(', ')
+                cmd = parts[0].strip()
+                song = parts[1].strip()
+                request_id = f"(node_{i}, {no_line})"
+
+                if cmd == "insert":
+                    node_that_stores_song = parts[2].strip()
+                    task = asyncio.create_task(insert_song(session, node_url, song, node_that_stores_song, request_id))
+                    # await insert_song(session, node_url, song, node_that_stores_song, request_id)
+                    tasks.append(task)
+
+                elif cmd == "query":
+                    task = asyncio.create_task(query_song(session, node_url, song, request_id))
+                    # await query_song(session, node_url, song, request_id)
+                    tasks.append(task)
+
+        await asyncio.gather(*tasks)  # Run all tasks asynchronously
+
+#@measure_time
+async def async_mixed_requests():
+    # remove execution.log if exists
+    if os.path.exists("execution.log"):
+        os.remove("execution.log")
+    tasks = [async_mixed_requests_in_node(i) for i in range(nodes_number)]
+    #await asyncio.gather(*tasks)
+    for task in tasks:
+        await task
+
 
 @measure_time
 def test():
@@ -136,7 +210,7 @@ if __name__ == '__main__':
     print(f"Trying Experiment with replication factor: {REPLICA_FACTOR} and consistency level: {consistency}...")
     args = sys.argv[1:]
     if len(args) == 0:
-        print("Please provide an experiment argument (insert, query, requests)")
+        print("Please provide an experiment argument (insert, query, requests, async_requests)")
         sys.exit(1)
     if args[0] == "insert":
         print("Experiment: Inserting key-value pair into DHT")
@@ -147,6 +221,9 @@ if __name__ == '__main__':
     elif args[0] == "requests":
         print("Experiment: Sending requests to DHT")
         mixed_requests()
+    elif args[0] == "async_requests":
+        print("Experiment: Sending requests to DHT asynchronously")
+        asyncio.run(async_mixed_requests())
     elif args[0] == "test":
         print("Experiment: Testing DHT")
         test()

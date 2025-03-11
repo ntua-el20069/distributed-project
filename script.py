@@ -100,11 +100,56 @@ def mixed_requests_in_node(i: int):
                     print(f"{request_id}: Queried {song.strip()} -> {data['status']}: {data['value']}")
                 except Exception as e:
                     print(f"{request_id}: Queried {song.strip()} -> Faulty Response: {e}")
-   
+
+def insert_song(node_url, song, node_that_stores_song, request_id):
+    """Asynchronous insert request"""
+    # check if execution.log exists
+    # mode = 'w' if not os.path.exists("execution.log") else 'a'
+    # with open("execution.log", mode) as f:
+    #     f.write(f"{request_id}:\t Inserting {song}: {node_that_stores_song}\n")
+    res = requests.post(f"{node_url}/insert", data={"key": song, "value": node_that_stores_song})
+    print(f"{request_id}:\t Inserted {song}: {node_that_stores_song}")
+
+def query_song(node_url, song, request_id):
+    """Asynchronous query request"""
+    # mode = 'w' if not os.path.exists("execution.log") else 'a'
+    # with open("execution.log", mode) as f:
+    #     f.write(f"{request_id}:\t Querying {song}\n")
+    res = requests.get(f"{node_url}/query", params={"key": song})
+    data = res.json()
+    try:
+        print(f"{request_id}: Queried {song} -> {data['status']}: {data['value']}")
+    except Exception as e:
+        print(f"{request_id}: Queried {song} -> Faulty Response: {e}")
+
 @measure_time
 def mixed_requests():
-    for i in range(nodes_number):
-        mixed_requests_in_node(i)
+    if os.path.exists("execution.log"):
+        os.remove("execution.log")
+    req_files = [open(f"requests/requests_0{i}.txt", "r").readlines() for i in range(nodes_number)]
+    for no_line in range(50):
+        for i in range(nodes_number):
+            node_url = get_url(nodes[i]['ip'], nodes[i]['port'])
+            
+            line = req_files[i][no_line]
+            if not line.strip():
+                continue
+            parts = line.split(', ')
+            cmd = parts[0].strip()
+            song = parts[1].strip()
+            request_id = f"(node_{i}, {no_line})"
+            
+            if cmd == "insert":
+                node_that_stores_song = parts[2].strip()
+                insert_song(node_url, song, node_that_stores_song, request_id)
+
+            elif cmd == "query":
+                query_song(node_url, song, request_id)
+
+    
+    
+    # for i in range(nodes_number):
+        # mixed_requests_in_node(i)
     '''threads = []
     for i in range(nodes_number):
         t = threading.Thread(target=mixed_requests_in_node, args=(i,))

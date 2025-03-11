@@ -4,3 +4,4 @@ __pycache__/
 tests/test_insert.txt
 team_12_ips.csv
 contents.json
+execution.log

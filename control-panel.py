@@ -70,4 +70,4 @@ if __name__ == '__main__':
     # make it get one argument (local/aws) default aws
     # nodes defined in helpers.py
     print(f"Nodes: {nodes}")
-    app.run(debug=True, host='0.0.0.0', port=11000, use_reloader=False)
+    app.run(debug=True, host='0.0.0.0', port= 80 if AWS else 11000, use_reloader=False)

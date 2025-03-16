@@ -55,7 +55,7 @@ by running the script following with the corresponding argument, as shown below 
 python script.py insert
 ```
 
-# Experiments results
+## Experiments results
 We ran experiments for strong and eventual consistency types and replication factor 1, 3, 5.
 You can see some experiments results: throughput diagrams, query results and difference on the freshness of the values in `experiments/` directory.
 
